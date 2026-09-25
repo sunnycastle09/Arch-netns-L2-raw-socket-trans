@@ -7,6 +7,8 @@
 #include <iostream>
 #include <vector>
 #include <sys/syscall.h>
+#include <linux/if_ether.h>
+#include <linux/if_packet.h>
 
 int main(){
 	int fd=syscall(SYS_socket,AF_PACKET,SOCK_RAW,htons(ETH_P_ALL));
@@ -29,21 +31,18 @@ int main(){
 	}
 	frame.push_back(0x88);
 	frame.push_back(0xb5);
-	std::cout<<"enter string data length for send: ";
-	int length_;
-	char temp;
-	std::cin>>std::dec>>length_;
-	std::cout<<"enter string data for send per one char\n";
-	for(int i=0;i<length_;i++){
-		std::cout<<i+1<<": ";
-		std::cin>>std::dec>>temp;
-		frame.push_back(temp);
+	std::cout<<"enter string data for send: ";
+	std::string str;
+	std::cin>>str;
+	for(char c: str){
+		frame.push_back(static_cast<unsigned char>(c));
 	}
 	struct sockaddr_ll addr{0};
 	addr.sll_family = AF_PACKET;
+	addr.sll_protocol=htons(0x88b5);
 	addr.sll_ifindex=ifindex;
-	addr.sll_halen=6;
-	memcpy(addr.sll_addr,frame.data(),6);
+	addr.sll_halen=ETH_ALEN;
+	memcpy(addr.sll_addr,frame.data(),ETH_ALEN);
 	long result=syscall(SYS_sendto,fd,frame.data(),frame.size(),0,&addr,sizeof(addr));
 	std::cout<<"des mac addr: ";
 	for(int i=0;i<6;i++){
